@@ -1,0 +1,92 @@
+﻿
+@model ShiftPerformance.Models.ProcessResult
+
+<div id="myModal" class="modal fade">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="text-center">
+                @*modal-header*@
+                    <h1 id="totalScoreHeader" style="color: blue;"></h1>
+                    <h3 id="totalScoreSubHeader" style="color: blue"></h3>
+                <h5 id="subHeader"></h5>
+            </div>
+            <div id="results" class="modal-body">
+                @if (Model.Message != "Success")
+                {
+                    <p>There was a problem Saving.</p>
+                    <p> @Model.Message </p>
+                }
+                else
+                {
+                    <div id="resultsSummary"></div>
+                }
+            </div>
+            <div class="modal-footer text-center">
+                <a class="btn btn-success text-center" href='@Model.ActionName'>Done</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts
+{
+    @Scripts.Render("~/bundles/Chart")
+}
+<script>
+    var jsonQue = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.dataModelSummary));
+
+    $(document).ready(function () {
+        if (jsonQue !== 'undefined' && jsonQue.lstDataModelSummary.length > 0) {
+    
+            var head = '<div class="table">\
+            <table class="table table-striped table-bordered" style="margin-top:-16px;"><tbody>';
+            var tail = '</tbody> </table> </div>';
+            var rows = '';
+
+            var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+            //swap the Month and day to get a valid date in javascript.
+            var dtText = jsonQue.date.split('-');
+            dtText = dtText[1] + '/' + dtText[0] + '/' + dtText[2];
+            var d = new Date(dtText);
+
+            $('#subHeader').html(monthNames[d.getMonth()] + ', ' + d.getDate() + ' - ' + jsonQue.Shift + ' - ' + jsonQue.ManagerName);
+            
+            jsonQue.lstDataModelSummary.forEach(function(elem){
+                if(!isNaN(elem.Response) && parseInt(elem.Response) > 0){
+                    rows += '<tr><td>' + elem.Question + '</td><td class="text-center">' + elem.Response + '</td></tr>';
+                }
+            });
+            // stick the summary too
+            var Comments = jsonQue.AllComments.split("!~");
+            var AllComments = '<ul>';
+            if (Comments.length >0) {
+                Comments.forEach(function(elem){ 
+                    AllComments += '<li>' + elem +'</li>';
+                });
+                AllComments += '</ul>';
+            }
+            tail += AllComments;
+
+            $('#resultsSummary').html(head + rows + tail);
+            var deviation = jsonQue.TotalScore - jsonQue.RunningAverage;
+            $('#totalScoreHeader').html('Score - ' + jsonQue.TotalScore);
+            var deviationText = '';
+            if (deviation < 0) {
+                deviationText =  Math.abs(deviation) +' less'+' than 15 day moving avg of '+ jsonQue.RunningAverage;
+            }else if (deviation > 0) {
+                deviationText =  Math.abs(deviation) +' more'+' than 15 day moving avg of '+ jsonQue.RunningAverage;
+            }else if (deviation == 0) {
+                deviationText = ' same as 15 day moving avg of '+ jsonQue.RunningAverage;
+            }
+
+            $('#totalScoreSubHeader').html(' ('+deviationText+')');
+            $("#myModal").modal({
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            $("#myModal").modal('show');
+        }
+    });
+</script>

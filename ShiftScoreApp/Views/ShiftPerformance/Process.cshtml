@@ -1,0 +1,28 @@
+﻿@model ShiftPerformance.Models.ProcessResult
+
+@*stale copy Unused*@
+@{ 
+    ViewBag.Title = "stale copy Unused";
+}
+<div class="modal-header text-center">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h4 class="modal-title">Summary</h4>
+</div>
+<div class="modal-body text-center">
+
+    @if (string.IsNullOrEmpty(Model.RedirectUrl))
+    {
+        <p>There was a problem Saving.</p>
+        <p>
+            @Model.Message
+        </p>
+    }
+    else
+    {
+        <p>Thank you.</p>
+        @*<a class="btn btn-default" href='@Model.RedirectUrl'>Ok</a>*@
+        @Html.ActionLink("Ok", Model.ActionName, "3c1LFhG1218YnktzdTc1LFhG12K2eD_kAvyR8YnWIAzdlE",
+           new { @class = "btn btn-success" })
+    }
+
+</div>

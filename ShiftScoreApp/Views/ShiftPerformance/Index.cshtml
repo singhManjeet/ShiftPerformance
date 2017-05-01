@@ -1,0 +1,244 @@
+﻿@model ShiftPerformance.Models.FormItems
+
+@{
+    ViewBag.Title = "Shift Performance";
+    var frmElems = Model.frmElements;
+    int idx = 0;
+    var dt = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(System.DateTime.UtcNow, "Pacific Standard Time");
+}
+<h3 class="text-center">
+    @ViewBag.Title
+</h3>
+<h6 class="text-center">
+    @dt.ToShortTimeString()
+</h6>
+@using (Html.BeginForm("3c1LFhG1218YnktzdTc1LFhG12K2eD_kAvyR8YnWIAzdlE", "ShiftPerformance", FormMethod.Post, new { RanWeired = Model.SecretKey }))
+{
+    @Html.AntiForgeryToken()
+    foreach (var item in Model.frmElements)
+    {
+        if (idx == 0)
+        {
+            <div class="row" style="margin-top: 15px; text-align: left;">
+                <div class="col-md-12 question">
+                    @item.QuestionText
+                </div>
+                <div class="col-md-3 col-sm-4 col-xs-8">
+                    <div class="input-group date">
+                        <input type="text" id="@item.Name" name="@item.Name" data-weight="@item.ScoreWeight" @Html.Raw(item.isRequired) class="form-control" />
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row" style="margin-top: 15px; text-align: left;">
+                <div class="col-md-12 question">
+                    @item.QuestionText
+                </div>
+                <div class="col-md-12">
+                    <div class="col-md-6 col-xs-6">
+                        <select class="btn dropdown-toggle btn-default" style="margin-top:5px;" id="@item.Name" name="@item.Name" data-weight="@item.ScoreWeight" @Html.Raw(item.isRequired)>
+                            <option value="">Choose</option>
+                            @if (item.MaxValue == 0)
+                            {
+                                foreach (var opt in item.Options)
+                                {
+                                    <option value="@opt">@opt</option>
+                                }
+                            }
+                            else if (item.MaxValue > 0)
+                            {
+                                for (int i = item.MinValue; i <= item.MaxValue; i++)
+                                {
+                                    <option value="@i">@i</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-xs-6">
+                        @if (item.isCommentSupported)
+                        {
+                            <input type="text" id="Comment@(item.Name)" class="form-control glyphicon-comment" style="display: none;" placeholder="Please add details" />
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        idx++;
+    }
+
+    <input type="hidden" id="totalScore" name="totalScore" />
+    <input type="hidden" id="finalSummary" name="finalSummary" />
+    <div class="row text-center" style="margin-top:10px;">
+        <div class="form-group">
+            <div class="col-md-offset-0 col-md10">
+                <button type="Submit" class="btn btn-primary" onclick="return btnSave(this);">Submit</button>
+            </div>
+        </div>
+    </div>
+    <div id="myModal" class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 id="totalScoreHeader" class="modal-title text-center">Score - </h4>
+                </div>
+                <div id="results" class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <input type="submit" value="Submit" class="btn btn-default" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div id="finalModal" class="modal fade">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div id="resultMessage"></div>
+        </div>
+    </div>
+</div>
+<style>
+    td {
+        /* css-3 */
+        white-space: -o-pre-wrap;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        white-space: -moz-pre-wrap;
+        white-space: -pre-wrap;
+    }
+
+    table {
+        table-layout: fixed;
+    }
+
+    input:required:hover {
+        opacity: 1 !important;
+    }
+
+    :required {
+        border-color: red !important;
+    }
+</style>
+<script>
+    var userScores = [];
+    var totalUserScore = 0;
+
+    $(document).ready(function () {
+        // check the cookie for Manager Name and assign it to Q2 */
+        var cookieManagerName = readCookie('cookieManagerName');
+        if (cookieManagerName != null) {
+            var element = document.getElementById('Q2');
+            element.value = cookieManagerName;
+        }
+
+        $('#Q0').parent('div').datetimepicker({ format: 'DD-MM-YYYY', defaultDate: new Date() });
+    });
+
+    // change handler for the Manger (Q2) on document Ready.
+    $(function () {
+        $("#Q2").change(function () {
+            var selectedText = $(this).find("option:selected").text();
+            var selectedValue = $(this).val();
+            var cookieManagerName = readCookie('cookieManagerName');
+            if (cookieManagerName != null) {
+                eraseCookie('cookieManagerName');
+            }
+            else {
+                createCookie('cookieManagerName', selectedValue, 30);
+            }
+        });
+    });
+
+    // change handler for all the dropdowns to force the comment text box to be required, on document Ready.
+    $(function () {
+        $("select").change(function () {
+            var selectedText = $(this).find("option:selected").text();
+            var selectedValue = $(this).val();
+
+            if (parseInt(selectedValue) > 0) {
+                var commentTxtBoxId = $(this).parent().siblings().find('input').attr('id');
+                if (commentTxtBoxId != null ) {
+                    document.getElementById(commentTxtBoxId).required = true;
+                    document.getElementById(commentTxtBoxId).style.display = 'block';
+                }
+            }
+        });
+    });
+
+    function btnSave(btn) {
+        if (btn.textContent === 'Submitting...') {
+            return false;
+        }
+        
+        if (!$('Form')[0].checkValidity()) {
+            return true;
+        }
+        
+        btn.textContent = 'Submitting...';
+
+        //prepare the concatenated summary
+        var jObj = $("input[id^='Comment']")
+        var allComments = [];
+
+        Object.keys(jObj).filter(function (elem, index, array) {
+            return parseInt(elem) || parseInt(elem) === 0
+        }).forEach(function (e) {
+            allComments.push(jObj[e]['value']);
+        });
+        var finalComments = allComments.filter(function (elem, index, array) {
+            return elem.length > 0 ? true : false;
+        }).join('!~');
+
+        $('#finalSummary').val(finalComments);
+
+        //createModel();
+        // The below bock was extracted from the above function.
+        userScores = $('Form select option:selected').map(function () {
+            return (this.value === '' ? 0 : this.value) * this.parentNode.getAttribute('data-weight');
+        }).get();
+
+        totalUserScore = userScores.reduce(function add(a, b) {
+            if (isNaN(b)) return a;
+            return a + b;
+        }, 0);
+
+        $('#totalScore').val(totalUserScore);
+        return true;
+    }
+
+    /* Start Cookie related functions*/
+    function createCookie(name, value, days) {
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            var expires = "; expires=" + date.toGMTString();
+        }
+        else var expires = "";
+        document.cookie = name + "=" + value + expires + "; path=/";
+    }
+
+    function readCookie(name) {
+        var nameEQ = name + "=";
+        var ca = document.cookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+
+    function eraseCookie(name) {
+        createCookie(name, "", -1);
+    }
+    /* End Cookie related functions*/
+</script>
